@@ -22,8 +22,23 @@ function run_after_request(result, run) {
   if (result.res.status === 200) {
     // 原始值为空或者返回结构和schema和原来的不一致
     if (result.res.body) {
-      let validtor = schemaValidator(run.interface.res_body, result.res.body);
-      if (!validtor.valid || !run.interface.res_body) {
+      let res_body = run.interface.res_body;
+      res_body = typeof res_body === 'string' ? json_parse(res_body) : res_body;
+
+      let isComplex = false;
+      // 复合schema时删除额外的属性
+      if (res_body && (res_body['oneOf'] || res_body['anyOf'])) {
+        isComplex = true;
+        delete res_body['required'];
+        delete res_body['properties'];
+      }
+
+      let validtor = schemaValidator(res_body, result.res.body);
+      if (
+        !res_body || // 原存储的为空值
+        !validtor.valid || // 验证失败
+        (!isComplex && res_body['properties'] && Object.keys(res_body['properties']).length === 0) // 仅仅有个properties没有验证信息
+      ) {
         return {
           name: '同步数据',
           key: 'sync_' + idx++,
