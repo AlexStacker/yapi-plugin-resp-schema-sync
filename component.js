@@ -114,7 +114,7 @@ export default class RespSchemaSync extends Component {
 
   componentDidMount() {
     // 将上一步验证错误的消息展示一次
-    message.warning(this.props.message);
+    this.props.message && message.warning(this.props.message);
   }
 
   render() {
